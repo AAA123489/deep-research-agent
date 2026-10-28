@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+
+# 环境变量与密钥
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# 数据与日志
+*.log
+logs/
+data/cache/
+tmp/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
