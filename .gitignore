@@ -23,7 +23,15 @@ build/
 *.pem
 *.key
 
-# 数据与日志
+# 数据与分析产物
+*.duckdb
+*.duckdb.wal
+*.sqlite
+*.sqlite3
+data/*.parquet
+eval/results/
+
+# 日志
 *.log
 logs/
 data/cache/

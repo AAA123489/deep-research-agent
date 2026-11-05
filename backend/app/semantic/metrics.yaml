@@ -1,0 +1,200 @@
+# 电商经营分析 · 指标语义层（ec_v1）
+#
+# 每个指标是一段「口径契约」。模型生成 SQL 时，
+# 表达式必须与这里等价，并且带上 required_filters / required_joins。
+# 这个文件是整个 ChatBI 系统的业务指标定义中心，
+# 用于约束哪些指标可以被问、如何计算、允许按哪些维度分组。
+#
+# 所有订单类指标共享同一个前提：
+#     status IN ('paid','shipped','completed') AND paid_at IS NOT NULL
+# 这表示只统计已支付且有效的订单，排除未支付或无时间值的数据。
+#
+# kind 说明：
+#   additive —— 可加总的原始聚合（GMV、订单数、成本）
+#   derived  —— 由其他指标组合而成（aov、毛利）
+#   ratio    —— 分子 / 分母（退款率、毛利率）
+#
+# ratio / derived 不写 refund_treatment，由组件继承。
+# 也就是说，派生指标和比率指标的退款处理方式通常由其组成的基础指标决定。
+
+# ============================================================
+# 可问指标 1/5 —— gmv
+# 业务含义：成交总额，按商品成交价汇总，不考虑运费和优惠。
+# ============================================================
+gmv:
+  name: 成交总额
+  synonyms: [GMV, 销售额, 成交额, 交易额]
+  kind: additive
+  source: >
+    orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN products p ON p.product_id = oi.product_id
+  expression: SUM(oi.quantity * oi.unit_price)
+  required_filters:
+    - o.status IN ('paid', 'shipped', 'completed')
+    - o.paid_at IS NOT NULL
+  time_field: o.paid_at
+  refund_treatment: keep_original
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: 元
+  description: 有效订单的商品成交价合计；不含运费、不扣优惠、退款不回冲（已退款订单仍计入）。成本与运费另算，因此毛利偏高。
+  verification: strict
+  visible: true
+
+# ============================================================
+# 可问指标 2/5 —— order_count
+# 业务含义：有效订单数，按订单去重统计，避免明细行重复。
+# ============================================================
+order_count:
+  name: 订单数
+  synonyms: [订单量, 成交单数, 单量]
+  kind: additive
+  # 这里 JOIN 明细和商品只是为了支持按品类切片；
+  # COUNT(DISTINCT o.order_id) 保证不会因为明细多行而重复计数。
+  # 这确保“订单数”统计的是订单维度而不是商品明细维度。
+  source: >
+    orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN products p ON p.product_id = oi.product_id
+  expression: COUNT(DISTINCT o.order_id)
+  required_filters:
+    - o.status IN ('paid', 'shipped', 'completed')
+    - o.paid_at IS NOT NULL
+  time_field: o.paid_at
+  refund_treatment: keep_original
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: 单
+  description: 有效订单去重数；退款不改变订单状态，已退款订单仍计入。
+  verification: strict
+  visible: true
+
+# ============================================================
+# 组件指标 —— product_cost（用户不可直接问）
+# 业务含义：商品成本，用于后续计算毛利。
+# ============================================================
+product_cost:
+  name: 商品成本
+  synonyms: [成本]
+  kind: additive
+  source: >
+    orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN products p ON p.product_id = oi.product_id
+  expression: SUM(oi.quantity * p.cost)
+  required_filters:
+    - o.status IN ('paid', 'shipped', 'completed')
+    - o.paid_at IS NOT NULL
+  time_field: o.paid_at
+  refund_treatment: keep_original
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: 元
+  description: 有效订单的商品成本合计；不含履约与物流成本。
+  verification: strict
+  visible: false
+
+# ============================================================
+# 组件指标 —— refunded_orders（用户不可直接问）
+# 业务含义：产生退款的订单数，用于计算退款率。
+# ============================================================
+refunded_orders:
+  name: 退款订单数
+  synonyms: [退款单数]
+  kind: additive
+  source: >
+    orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN products p ON p.product_id = oi.product_id
+    LEFT JOIN refunds r ON r.order_id = o.order_id
+  expression: COUNT(DISTINCT CASE WHEN r.refund_id IS NOT NULL THEN o.order_id END)
+  required_filters:
+    - o.status IN ('paid', 'shipped', 'completed')
+    - o.paid_at IS NOT NULL
+  required_joins:
+    - o.order_id = r.order_id
+  time_field: o.paid_at
+  refund_treatment: none
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: 单
+  description: 有效订单中发生过退款的订单数，按支付时间归属；一笔订单多次退款按整单计一次。
+  verification: strict
+  visible: false
+
+# ============================================================
+# 组件指标 —— gross_profit（用户不可直接问）
+# 业务含义：毛利，直接等于成交总额减去商品成本。
+# ============================================================
+gross_profit:
+  name: 毛利
+  synonyms: [毛利额]
+  kind: derived
+  components: [gmv, product_cost]
+  expression: gmv - product_cost
+  time_field: o.paid_at
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: 元
+  description: 成交总额减商品成本；未扣除运费与优惠，因此高于真实毛利。
+  verification: component
+  visible: false
+
+# ============================================================
+# 可问指标 3/5 —— aov
+# 业务含义：平均客单价，衡量每单平均成交金额。
+# ============================================================
+aov:
+  name: 客单价
+  synonyms: [平均订单金额, 客单]
+  kind: derived
+  numerator: gmv
+  denominator: order_count
+  expression: gmv / NULLIF(order_count, 0)
+  time_field: o.paid_at
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: 元
+  description: 成交总额除以订单数；分母为 0 时返回 NULL。
+  verification: component
+  visible: true
+
+# ============================================================
+# 可问指标 4/5 —— refund_rate
+# 业务含义：退款订单占比，反映退款风险或售后表现。
+# ============================================================
+refund_rate:
+  name: 退款率
+  synonyms: [退款订单占比, 退货率]
+  kind: ratio
+  numerator: refunded_orders
+  denominator: order_count
+  expression: refunded_orders / NULLIF(order_count, 0)
+  time_field: o.paid_at
+  mixed_treatment_ok: true        # refunded_orders=none，order_count=keep_original
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: "%"
+  description: 有效订单中发生过退款的订单占比；部分退款按整单计一次，不衡量退款金额。
+  verification: component
+  visible: true
+
+# ============================================================
+# 可问指标 5/5 —— gross_margin
+# 业务含义：毛利率，衡量利润对收入的贡献程度。
+# ============================================================
+gross_margin:
+  name: 毛利率
+  synonyms: [毛利占比]
+  kind: ratio
+  numerator: gross_profit
+  denominator: gmv
+  expression: gross_profit / NULLIF(gmv, 0)
+  time_field: o.paid_at
+  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  default_window: last_30d
+  unit: "%"
+  description: 毛利除以成交总额；未扣运费与优惠，数值高于真实毛利率。
+  verification: component
+  visible: true

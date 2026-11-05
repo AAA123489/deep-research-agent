@@ -1,0 +1,44 @@
+# 维度白名单
+# GROUP BY 必须能映射到这里的表达式；不在白名单里的列不允许分组。
+# expr 里的表别名对应指标 source 中使用的别名。
+# 这些维度定义了所有允许被用户按“维度”聚合的字段，供 ChatBI 生成 SQL 时校验。
+# type 用于说明维度类型：time 表示时间维度，category 表示分类维度。
+
+# 维度配置入口
+# 每个 key 都是维度名，最终会用于查询语句中的 GROUP BY / 分组字段。
+dimensions:
+  # 日期维度：支持按天、周、月、季度进行聚合。
+  date:
+    type: time
+    expr: o.paid_at
+    granularities: [day, week, month, quarter]
+
+  # 省份维度：按订单发货/支付省份分组。
+  province:
+    type: category
+    expr: o.province
+
+  # 城市维度：按订单城市进行细粒度分组。
+  city:
+    type: category
+    expr: o.city
+
+  # 商品大类维度：来自商品维表 p.category。
+  category:
+    type: category
+    expr: p.category
+
+  # 商品子类维度：用于商品分类的下一级聚合。
+  sub_category:
+    type: category
+    expr: p.sub_category
+
+  # 渠道维度：例如线上渠道、线下渠道、APP、小程序等。
+  channel:
+    type: category
+    expr: o.channel
+
+  # 支付方式维度：如微信、支付宝、银行卡、现金等。
+  payment_method:
+    type: category
+    expr: o.payment_method
