@@ -45,6 +45,7 @@ class Executor:
         self.row_limit = row_limit
         self._con = duckdb.connect(str(self.db_path), read_only=True)
         self._bounds: tuple[date, date] | None = None
+        self._values: dict[str, list[str]] | None = None
 
     # -- 数据集边界 --------------------------------------------------------
 
@@ -61,6 +62,42 @@ class Executor:
             ).fetchone()
             self._bounds = (row[0], row[1])
         return self._bounds
+
+    # -- 维度的真实取值 ----------------------------------------------------
+
+    def dimension_values(
+        self,
+        registry,
+        *,
+        max_distinct: int = 40,
+    ) -> dict[str, list[str]]:
+        """低基数列的真实取值，拼提示词时用。
+
+        模型不知道库里 `payment_method` 存的是 ``wechat`` 而不是「微信支付」，
+        不知道省份是 ``上海市`` 而不是「上海」。不给取值，它只能猜，猜错就是 0 行。
+        基数太高的列（比如订单号）直接跳过，塞进去只会把提示词撑爆。
+        """
+        if self._values is not None:
+            return self._values
+
+        values: dict[str, list[str]] = {}
+        for name, dimension in registry.dimensions.items():
+            if dimension.is_time or not dimension.source:
+                continue
+            try:
+                rows = self._con.execute(
+                    f"SELECT DISTINCT {dimension.expr} FROM {dimension.source} "
+                    f"WHERE {dimension.expr} IS NOT NULL "
+                    f"ORDER BY 1 LIMIT {max_distinct + 1}"
+                ).fetchall()
+            except duckdb.Error:
+                continue
+            if len(rows) > max_distinct:
+                continue
+            values[name] = [str(row[0]) for row in rows]
+
+        self._values = values
+        return values
 
     # -- 执行 --------------------------------------------------------------
 

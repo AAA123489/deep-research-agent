@@ -171,7 +171,7 @@ questions:
 
   - id: a12
     type: analysis
-    question: 2026年6月上海北京广东浙江四个地方的销售额
+    question: 2026年6月上海北京广东浙江四个地方的销售额合计是多少
     metric: gmv
     expect: scalar
     reference_sql: |

@@ -57,20 +57,28 @@ class OpenAICompatGenerator:
         model: str,
         base_url: str | None = None,
         temperature: float = 0.0,
-        max_tokens: int = 800,
+        max_tokens: int = 3000,
+        value_hints: dict[str, list[str]] | None = None,
     ) -> None:
         from openai import OpenAI
 
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
+        #: 维度名 -> 该列在库里的真实取值，拼提示词时一并交给模型
+        self.value_hints = value_hints or {}
         self._client = OpenAI(api_key=api_key, base_url=base_url)
 
     @classmethod
-    def from_env(cls) -> OpenAICompatGenerator:
+    def from_env(
+        cls,
+        *,
+        value_hints: dict[str, list[str]] | None = None,
+    ) -> OpenAICompatGenerator:
         api_key = os.environ.get("LLM_API_KEY")
         model = os.environ.get("LLM_MODEL")
         base_url = os.environ.get("LLM_BASE_URL") or None
+        max_tokens = int(os.environ.get("LLM_MAX_TOKENS") or 3000)
 
         missing = [
             name
@@ -87,7 +95,13 @@ class OpenAICompatGenerator:
                 f"或者用 python -m app.graph --demo 离线跑一遍。"
             )
 
-        return cls(api_key=api_key, model=model, base_url=base_url)
+        return cls(
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            max_tokens=max_tokens,
+            value_hints=value_hints,
+        )
 
     def generate(
         self,
@@ -106,6 +120,7 @@ class OpenAICompatGenerator:
             bounds=bounds,
             previous_sql=previous_sql,
             error=error,
+            value_hints=self.value_hints,
         )
         response = self._client.chat.completions.create(
             model=self.model,
@@ -113,7 +128,23 @@ class OpenAICompatGenerator:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
-        return extract_sql(response.choices[0].message.content or "")
+        choice = response.choices[0]
+        content = choice.message.content or ""
+
+        # 推理型模型（deepseek-v4-flash 之类）会先花 token 思考，
+        # max_tokens 给太小就会「思考完就没额度了」，content 是空的。
+        # 这种情况必须报出来，不能当成「模型返回空 SQL」草草收场。
+        if not content.strip():
+            hint = (
+                "，推理过程把 max_tokens 用光了，调大 LLM_MAX_TOKENS 试试"
+                if choice.finish_reason == "length"
+                else ""
+            )
+            raise RuntimeError(
+                f"模型没有返回内容（finish_reason={choice.finish_reason}）{hint}"
+            )
+
+        return extract_sql(content)
 
 
 # ---------------------------------------------------------------------------

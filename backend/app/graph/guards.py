@@ -251,6 +251,16 @@ def _expand(spec: MetricSpec, registry: MetricRegistry) -> exp.Expression:
     return node
 
 
+def expanded_sql(spec: MetricSpec, registry: MetricRegistry) -> str:
+    """给提示词用：返回完全展开后的表达式。
+
+    ``refund_rate`` 在 YAML 里写的是 ``refunded_orders / NULLIF(order_count, 0)``，
+    光看这一行模型不知道 refunded_orders 对应什么 SQL，只能瞎猜列名。
+    把展开结果一起给它，它照抄就行。
+    """
+    return _expand(spec, registry).sql(dialect=DIALECT)
+
+
 def _substitute(
     current: exp.Expression,
     name: str,

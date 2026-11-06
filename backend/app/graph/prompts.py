@@ -11,6 +11,8 @@ from typing import Any
 
 from app.semantic.loader import MetricRegistry, MetricSpec
 
+from .guards import expanded_sql
+
 _SYSTEM_TEMPLATE = """\
 你是一个电商数据分析助手，负责把中文问题翻译成 DuckDB SQL。
 
@@ -22,6 +24,11 @@ _SYSTEM_TEMPLATE = """\
 5. 只能按「可用维度」里的字段 GROUP BY。时间维度用 DATE_TRUNC('粒度', 字段)。
 6. 问题里没给时间范围时，用「默认时间窗口」，基准日是 {data_end}。
 7. 输出列名用英文小写别名。
+8. 时间范围只写进 WHERE。除非用户明说「按天/按周/按月/趋势/每天」，否则不要
+   GROUP BY 时间维度，也不要把时间列放进 SELECT。
+9. 除非用户明说「分别/各/每个/排名/从高到低/对比」，否则不要 GROUP BY 任何维度，
+   直接返回一个总数。
+10. 维度取值必须用「可用维度」里列出来的原值，不要翻译、不要补全、不要改写。
 
 数据覆盖范围：{data_start} 到 {data_end}（历史快照，不是真实今天）。
 
@@ -30,13 +37,14 @@ key: {key}
 名称: {name}
 单位: {unit}
 计算表达式: {expression}
+展开后的完整表达式（直接照抄这一段）: {expanded}
 数据来源: {source}
 必带过滤: {filters}
 必带 JOIN: {joins}
 默认时间窗口: {default_window}
 时间字段: {time_field}
 口径说明: {description}
-
+{components}
 【可用维度】
 {dimensions}
 """
@@ -61,6 +69,7 @@ def build_messages(
     bounds: tuple[date, date],
     previous_sql: str | None = None,
     error: str | None = None,
+    value_hints: dict[str, list[str]] | None = None,
 ) -> list[dict[str, str]]:
     """返回 OpenAI 兼容格式的 messages。"""
     system = _SYSTEM_TEMPLATE.format(
@@ -70,7 +79,8 @@ def build_messages(
         name=spec.name,
         unit=spec.unit,
         expression=spec.expression,
-        source=(spec.source or "").strip() or "（由组件指标提供）",
+        expanded=expanded_sql(spec, registry),
+        source=(spec.source or "").strip() or "（由组件指标提供，见下面的组件口径）",
         filters="\n  - ".join([""] + list(spec.required_filters))
         if spec.required_filters
         else "（无，由组件指标提供）",
@@ -80,7 +90,8 @@ def build_messages(
         default_window=spec.default_window,
         time_field=spec.time_field,
         description=spec.description,
-        dimensions=_dimension_block(spec, registry),
+        components=_component_block(spec, registry),
+        dimensions=_dimension_block(spec, registry, value_hints),
     )
 
     messages: list[dict[str, str]] = [{"role": "system", "content": system}]
@@ -100,7 +111,51 @@ def build_messages(
     return messages
 
 
-def _dimension_block(spec: MetricSpec, registry: MetricRegistry) -> str:
+def _component_block(spec: MetricSpec, registry: MetricRegistry) -> str:
+    """派生 / 比率指标要额外说明每个组件怎么算。
+
+    否则模型只看到 ``refunded_orders / NULLIF(order_count, 0)``，
+    既不知道 refunded_orders 该写成什么，也不知道要 JOIN refunds。
+    """
+    if not spec.is_derived:
+        return ""
+
+    lines = ["\n【组件口径】（上面的表达式由这些基础指标组成）"]
+    for metric in _walk_dependencies(spec, registry):
+        if metric.is_derived:
+            continue
+        lines.append(f"- {metric.key} = {metric.expression}")
+        lines.append(f"    来源: {' '.join((metric.source or '').split())}")
+        if metric.required_filters:
+            lines.append(f"    必带过滤: {'; '.join(metric.required_filters)}")
+        if metric.required_joins:
+            lines.append(f"    必带 JOIN: {'; '.join(metric.required_joins)}")
+    return "\n".join(lines) + "\n"
+
+
+def _walk_dependencies(spec: MetricSpec, registry: MetricRegistry) -> list[MetricSpec]:
+    seen: set[str] = set()
+    ordered: list[MetricSpec] = []
+
+    def walk(metric: MetricSpec) -> None:
+        for key in metric.dependencies:
+            if key in seen:
+                continue
+            seen.add(key)
+            dependency = registry.get(key)
+            ordered.append(dependency)
+            walk(dependency)
+
+    walk(spec)
+    return ordered
+
+
+def _dimension_block(
+    spec: MetricSpec,
+    registry: MetricRegistry,
+    value_hints: dict[str, list[str]] | None = None,
+) -> str:
+    hints = value_hints or {}
     lines: list[str] = []
     for name in spec.dimensions:
         dimension = registry.dimensions[name]
@@ -110,8 +165,16 @@ def _dimension_block(spec: MetricSpec, registry: MetricRegistry) -> str:
                 f"- {name}: {dimension.expr}"
                 f"（时间维度，粒度 {granularities}，用 DATE_TRUNC('粒度', {dimension.expr})）"
             )
-        else:
-            lines.append(f"- {name}: {dimension.expr}")
+            continue
+
+        line = f"- {name}: {dimension.expr}"
+        values = hints.get(name)
+        if values:
+            shown = "、".join(values[:30])
+            if len(values) > 30:
+                shown += " 等"
+            line += f"（取值只能是：{shown}）"
+        lines.append(line)
     return "\n".join(lines) if lines else "（无）"
 
 

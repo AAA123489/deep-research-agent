@@ -78,6 +78,9 @@ class DimensionSpec:
     type: str  # time | category
     expr: str
     granularities: tuple[str, ...] = ()
+    #: 分类维度必须写，形如 ``orders o``；用来查这一列的真实取值，
+    #: 否则模型会把 'wechat' 写成「微信支付」，查询直接返回 0 行。
+    source: str | None = None
 
     @property
     def is_time(self) -> bool:
@@ -298,11 +301,25 @@ class _Loader:
                     f"{where}：不支持的粒度 {bad}，可选 {' / '.join(GRANULARITIES)}"
                 )
 
+            source = body.get("source")
+            if source is not None:
+                if not isinstance(source, str) or not source.strip():
+                    raise SemanticConfigError(
+                        f"{where}：`source` 必须是非空字符串，比如 `orders o`"
+                    )
+                source = " ".join(source.split())
+            if dim_type == "category" and not source:
+                raise SemanticConfigError(
+                    f"{where}：分类维度必须声明 `source`（比如 `orders o`），"
+                    f"否则没法查这一列的真实取值"
+                )
+
             out[key] = DimensionSpec(
                 key=key,
                 type=str(dim_type),
                 expr=expr.strip(),
                 granularities=tuple(str(g) for g in granularities),
+                source=source,
             )
 
         if not out:

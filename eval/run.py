@@ -227,26 +227,32 @@ def main(argv: list[str] | None = None) -> int:
 
     registry = load_registry(SEMANTIC_DIR)
 
-    if args.model:
-        try:
-            generator = OpenAICompatGenerator.from_env()
-        except RuntimeError as exc:
-            print(exc, file=sys.stderr)
-            return 2
-        mode = f"真实模型（{generator.model}）"
-    else:
-        generator = ReferenceGenerator(
-            {q["question"]: q["reference_sql"] for q in questions if q.get("reference_sql")}
-        )
-        mode = "参考 SQL（不经过模型）"
-
-    print(f"模式：{mode}")
-    print(f"题目：{len(questions)} 道\n")
-
     report: list[tuple[str, str, str, str, bool, str]] = []
     passed = 0
 
     with Executor(args.db) as executor:
+        if args.model:
+            try:
+                generator = OpenAICompatGenerator.from_env(
+                    value_hints=executor.dimension_values(registry)
+                )
+            except RuntimeError as exc:
+                print(exc, file=sys.stderr)
+                return 2
+            mode = f"真实模型（{generator.model}）"
+        else:
+            generator = ReferenceGenerator(
+                {
+                    q["question"]: q["reference_sql"]
+                    for q in questions
+                    if q.get("reference_sql")
+                }
+            )
+            mode = "参考 SQL（不经过模型）"
+
+        print(f"模式：{mode}")
+        print(f"题目：{len(questions)} 道\n")
+
         for item in questions:
             try:
                 state = run(

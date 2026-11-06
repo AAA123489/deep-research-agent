@@ -92,6 +92,22 @@ metrics.yaml      →  查库  →  另一组数字
 
 ---
 
+## 额外的：模型怎么知道列里有哪些值
+
+省份存的是「上海市」不是「上海」，支付方式存的是 `wechat` 不是「微信支付」。
+模型猜不出来，猜错就是 0 行。
+
+所以 `dimensions.yaml` 里每个分类维度都写了 `source`，启动时查一次
+`SELECT DISTINCT`，把真实取值拼进提示词：
+
+```
+- payment_method: o.payment_method（取值只能是：alipay、bank_card、cash、wechat）
+```
+
+超过 40 个不同值的列自动跳过 —— 那种列塞进去只会把提示词撑爆。
+
+---
+
 ## 怎么跑
 
 ```bash
@@ -106,4 +122,13 @@ python backend/app/semantic/loader.py
 
 # 4. 跑守卫的演示
 cd backend && python -m app.graph.guards
+
+# 5. 评测（参考 SQL 模式，不花 token）
+python eval/run.py
+
+# 6. 评测（真实模型，需要 key）
+set LLM_API_KEY=sk-xxx
+set LLM_MODEL=deepseek-v4-flash
+set LLM_BASE_URL=https://api.deepseek.com/v1
+python eval/run.py --model
 ```

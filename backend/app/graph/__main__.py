@@ -175,7 +175,9 @@ def main(argv: list[str] | None = None) -> int:
             if not args.question:
                 parser.error("请给一个问题，或者加 --demo")
             try:
-                generator = OpenAICompatGenerator.from_env()
+                generator = OpenAICompatGenerator.from_env(
+                    value_hints=executor.dimension_values(registry)
+                )
             except RuntimeError as exc:
                 print(exc, file=sys.stderr)
                 return 2

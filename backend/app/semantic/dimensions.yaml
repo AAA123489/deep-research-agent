@@ -17,23 +17,28 @@ dimensions:
   province:
     type: category
     expr: o.province
+    source: orders o
 
   # 商品大类维度：来自商品维表 p.category。
   category:
     type: category
     expr: p.category
+    source: products p
 
   # 商品子类维度：用于商品分类的下一级聚合。
   sub_category:
     type: category
     expr: p.sub_category
+    source: products p
 
   # 渠道维度：例如线上渠道、线下渠道、APP、小程序等。
   channel:
     type: category
     expr: o.channel
+    source: orders o
 
   # 支付方式维度：如微信、支付宝、银行卡、现金等。
   payment_method:
     type: category
     expr: o.payment_method
+    source: orders o
