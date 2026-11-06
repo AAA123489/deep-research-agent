@@ -1,0 +1,285 @@
+# 20 道评测题
+#
+# 每题有三样东西：
+#   question       用户会怎么说
+#   metric         应该匹配到哪个指标
+#   reference_sql  人工写好的标准答案（用来算 golden 数字）
+#   expect         scalar（单值）/ rows（分组结果）/ clarify（应当追问）
+#
+# golden 数字由 `python eval/run.py --rebuild` 从 reference_sql 算出并存到
+# eval/golden.json。评测时拿实际结果跟它比，不看 SQL 长得像不像。
+
+version: ec_v1
+
+# 所有订单类指标共享的口径前提
+#   WHERE o.status IN ('paid','shipped','completed') AND o.paid_at IS NOT NULL
+
+questions:
+  # ── 分析类 12 题 ──────────────────────────────────────────────
+  - id: a01
+    type: analysis
+    question: 2026年6月的GMV是多少
+    metric: gmv
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+
+  - id: a02
+    type: analysis
+    question: 2026年6月一共有多少订单
+    metric: order_count
+    expect: scalar
+    reference_sql: |
+      SELECT COUNT(DISTINCT o.order_id) AS order_count
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+
+  - id: a03
+    type: analysis
+    question: 2026年6月的客单价是多少
+    metric: aov
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price)
+             / NULLIF(COUNT(DISTINCT o.order_id), 0) AS aov
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+
+  - id: a04
+    type: analysis
+    question: 2026年6月的退款率是多少
+    metric: refund_rate
+    expect: scalar
+    reference_sql: |
+      SELECT COUNT(DISTINCT CASE WHEN r.refund_id IS NOT NULL THEN o.order_id END)
+             / NULLIF(COUNT(DISTINCT o.order_id), 0) AS refund_rate
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      LEFT JOIN refunds r ON r.order_id = o.order_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+
+  - id: a05
+    type: analysis
+    question: 2026年6月的毛利率是多少
+    metric: gross_margin
+    expect: scalar
+    reference_sql: |
+      SELECT (SUM(oi.quantity * oi.unit_price) - SUM(oi.quantity * p.cost))
+             / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS gross_margin
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+
+  - id: a06
+    type: analysis
+    question: 2026年6月广东省的销售额
+    metric: gmv
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+        AND o.province = '广东省'
+
+  - id: a07
+    type: analysis
+    question: 2026年6月食品大类的销售额
+    metric: gmv
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+        AND p.category = '食品'
+
+  - id: a08
+    type: analysis
+    question: 2026年6月app渠道有多少订单
+    metric: order_count
+    expect: scalar
+    reference_sql: |
+      SELECT COUNT(DISTINCT o.order_id) AS order_count
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+        AND o.channel = 'app'
+
+  - id: a09
+    type: analysis
+    question: 2026年6月微信支付的客单价
+    metric: aov
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price)
+             / NULLIF(COUNT(DISTINCT o.order_id), 0) AS aov
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+        AND o.payment_method = 'wechat'
+
+  - id: a10
+    type: analysis
+    question: 2025年11月双十一的销售额
+    metric: gmv
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2025-11-01' AND o.paid_at < DATE '2025-12-01'
+
+  - id: a11
+    type: analysis
+    question: 2026年第二季度的毛利率
+    metric: gross_margin
+    expect: scalar
+    reference_sql: |
+      SELECT (SUM(oi.quantity * oi.unit_price) - SUM(oi.quantity * p.cost))
+             / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS gross_margin
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-04-01' AND o.paid_at < DATE '2026-07-01'
+
+  - id: a12
+    type: analysis
+    question: 2026年6月上海北京广东浙江四个地方的销售额
+    metric: gmv
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+        AND o.province IN ('上海市', '北京市', '广东省', '浙江省')
+
+  # ── 分组排序 5 题 ─────────────────────────────────────────────
+  - id: g01
+    type: group
+    question: 2026年6月各省份的销售额，从高到低
+    metric: gmv
+    expect: rows
+    reference_sql: |
+      SELECT o.province AS province,
+             SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+
+  - id: g02
+    type: group
+    question: 2026年6月各品类的退款率，从高到低
+    metric: refund_rate
+    expect: rows
+    reference_sql: |
+      SELECT p.category AS category,
+             COUNT(DISTINCT CASE WHEN r.refund_id IS NOT NULL THEN o.order_id END)
+               / NULLIF(COUNT(DISTINCT o.order_id), 0) AS refund_rate
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      LEFT JOIN refunds r ON r.order_id = o.order_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+
+  - id: g03
+    type: group
+    question: 2026年6月各渠道的客单价，从高到低
+    metric: aov
+    expect: rows
+    reference_sql: |
+      SELECT o.channel AS channel,
+             SUM(oi.quantity * oi.unit_price)
+               / NULLIF(COUNT(DISTINCT o.order_id), 0) AS aov
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+
+  - id: g04
+    type: group
+    question: 2026年6月各支付方式的订单数
+    metric: order_count
+    expect: rows
+    reference_sql: |
+      SELECT o.payment_method AS payment_method,
+             COUNT(DISTINCT o.order_id) AS order_count
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+
+  - id: g05
+    type: group
+    question: 2026年6月各商品子类的毛利率，从高到低
+    metric: gross_margin
+    expect: rows
+    reference_sql: |
+      SELECT p.sub_category AS sub_category,
+             (SUM(oi.quantity * oi.unit_price) - SUM(oi.quantity * p.cost))
+               / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS gross_margin
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+
+  # ── 歧义 3 题：应该追问，而不是瞎猜 ────────────────────────────
+  - id: c01
+    type: clarify
+    question: 最近生意怎么样
+    expect: clarify
+
+  - id: c02
+    type: clarify
+    question: 那个产品退款多吗
+    expect: clarify
+
+  - id: c03
+    type: clarify
+    question: 帮我看看数据
+    expect: clarify

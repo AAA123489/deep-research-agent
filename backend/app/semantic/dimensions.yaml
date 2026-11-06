@@ -18,11 +18,6 @@ dimensions:
     type: category
     expr: o.province
 
-  # 城市维度：按订单城市进行细粒度分组。
-  city:
-    type: category
-    expr: o.city
-
   # 商品大类维度：来自商品维表 p.category。
   category:
     type: category

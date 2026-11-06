@@ -91,7 +91,7 @@ refund_rate:
   denominator: order_count
   time_field: o.paid_at
   mixed_treatment_ok: true        # refunded_orders=none，order_count=keep_original
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   verification: component
   visible: true
@@ -104,7 +104,6 @@ refund_rate:
 dimensions:
   date:           { type: time, expr: o.paid_at, granularities: [day, week, month, quarter] }
   province:       { type: category, expr: o.province }
-  city:           { type: category, expr: o.city }
   category:       { type: category, expr: p.category }
   sub_category:   { type: category, expr: p.sub_category }
   channel:        { type: category, expr: o.channel }

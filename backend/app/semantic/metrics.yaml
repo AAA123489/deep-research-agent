@@ -35,7 +35,7 @@ gmv:
     - o.paid_at IS NOT NULL
   time_field: o.paid_at
   refund_treatment: keep_original
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: 元
   description: 有效订单的商品成交价合计；不含运费、不扣优惠、退款不回冲（已退款订单仍计入）。成本与运费另算，因此毛利偏高。
@@ -48,7 +48,7 @@ gmv:
 # ============================================================
 order_count:
   name: 订单数
-  synonyms: [订单量, 成交单数, 单量]
+  synonyms: [订单量, 成交单数, 单量, 订单数量, 订单]
   kind: additive
   # 这里 JOIN 明细和商品只是为了支持按品类切片；
   # COUNT(DISTINCT o.order_id) 保证不会因为明细多行而重复计数。
@@ -63,7 +63,7 @@ order_count:
     - o.paid_at IS NOT NULL
   time_field: o.paid_at
   refund_treatment: keep_original
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: 单
   description: 有效订单去重数；退款不改变订单状态，已退款订单仍计入。
@@ -88,7 +88,7 @@ product_cost:
     - o.paid_at IS NOT NULL
   time_field: o.paid_at
   refund_treatment: keep_original
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: 元
   description: 有效订单的商品成本合计；不含履约与物流成本。
@@ -116,7 +116,7 @@ refunded_orders:
     - o.order_id = r.order_id
   time_field: o.paid_at
   refund_treatment: none
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: 单
   description: 有效订单中发生过退款的订单数，按支付时间归属；一笔订单多次退款按整单计一次。
@@ -134,7 +134,7 @@ gross_profit:
   components: [gmv, product_cost]
   expression: gmv - product_cost
   time_field: o.paid_at
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: 元
   description: 成交总额减商品成本；未扣除运费与优惠，因此高于真实毛利。
@@ -153,7 +153,7 @@ aov:
   denominator: order_count
   expression: gmv / NULLIF(order_count, 0)
   time_field: o.paid_at
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: 元
   description: 成交总额除以订单数；分母为 0 时返回 NULL。
@@ -173,7 +173,7 @@ refund_rate:
   expression: refunded_orders / NULLIF(order_count, 0)
   time_field: o.paid_at
   mixed_treatment_ok: true        # refunded_orders=none，order_count=keep_original
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: "%"
   description: 有效订单中发生过退款的订单占比；部分退款按整单计一次，不衡量退款金额。
@@ -192,7 +192,7 @@ gross_margin:
   denominator: gmv
   expression: gross_profit / NULLIF(gmv, 0)
   time_field: o.paid_at
-  dimensions: [date, province, city, category, sub_category, channel, payment_method]
+  dimensions: [date, province, category, sub_category, channel, payment_method]
   default_window: last_30d
   unit: "%"
   description: 毛利除以成交总额；未扣运费与优惠，数值高于真实毛利率。

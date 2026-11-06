@@ -1,0 +1,394 @@
+{
+  "a01": {
+    "columns": [
+      "gmv"
+    ],
+    "rows": [
+      {
+        "gmv": 14212188.79
+      }
+    ]
+  },
+  "a02": {
+    "columns": [
+      "order_count"
+    ],
+    "rows": [
+      {
+        "order_count": 7973
+      }
+    ]
+  },
+  "a03": {
+    "columns": [
+      "aov"
+    ],
+    "rows": [
+      {
+        "aov": 1782.5396701367113
+      }
+    ]
+  },
+  "a04": {
+    "columns": [
+      "refund_rate"
+    ],
+    "rows": [
+      {
+        "refund_rate": 0.18412140975793304
+      }
+    ]
+  },
+  "a05": {
+    "columns": [
+      "gross_margin"
+    ],
+    "rows": [
+      {
+        "gross_margin": 0.2976200430841589
+      }
+    ]
+  },
+  "a06": {
+    "columns": [
+      "gmv"
+    ],
+    "rows": [
+      {
+        "gmv": 2224557.1
+      }
+    ]
+  },
+  "a07": {
+    "columns": [
+      "gmv"
+    ],
+    "rows": [
+      {
+        "gmv": 1265083.35
+      }
+    ]
+  },
+  "a08": {
+    "columns": [
+      "order_count"
+    ],
+    "rows": [
+      {
+        "order_count": 3916
+      }
+    ]
+  },
+  "a09": {
+    "columns": [
+      "aov"
+    ],
+    "rows": [
+      {
+        "aov": 1795.4650069194577
+      }
+    ]
+  },
+  "a10": {
+    "columns": [
+      "gmv"
+    ],
+    "rows": [
+      {
+        "gmv": 15501759.26
+      }
+    ]
+  },
+  "a11": {
+    "columns": [
+      "gross_margin"
+    ],
+    "rows": [
+      {
+        "gross_margin": 0.29650290954073977
+      }
+    ]
+  },
+  "a12": {
+    "columns": [
+      "gmv"
+    ],
+    "rows": [
+      {
+        "gmv": 6705032.57
+      }
+    ]
+  },
+  "g01": {
+    "columns": [
+      "province",
+      "gmv"
+    ],
+    "rows": [
+      {
+        "province": "广东省",
+        "gmv": 2224557.1
+      },
+      {
+        "province": "浙江省",
+        "gmv": 2084664.03
+      },
+      {
+        "province": "江苏省",
+        "gmv": 1922447.82
+      },
+      {
+        "province": "山东省",
+        "gmv": 1438182.38
+      },
+      {
+        "province": "上海市",
+        "gmv": 1283481.9
+      },
+      {
+        "province": "四川省",
+        "gmv": 1209269.13
+      },
+      {
+        "province": "北京市",
+        "gmv": 1112329.54
+      },
+      {
+        "province": "湖北省",
+        "gmv": 1048104.31
+      },
+      {
+        "province": "福建省",
+        "gmv": 987245.14
+      },
+      {
+        "province": "河南省",
+        "gmv": 901907.44
+      }
+    ]
+  },
+  "g02": {
+    "columns": [
+      "category",
+      "refund_rate"
+    ],
+    "rows": [
+      {
+        "category": "数码",
+        "refund_rate": 0.1956043956043956
+      },
+      {
+        "category": "服饰",
+        "refund_rate": 0.18723404255319148
+      },
+      {
+        "category": "食品",
+        "refund_rate": 0.18624338624338624
+      },
+      {
+        "category": "美妆",
+        "refund_rate": 0.18441636582430807
+      },
+      {
+        "category": "母婴",
+        "refund_rate": 0.18365384615384617
+      },
+      {
+        "category": "家居",
+        "refund_rate": 0.18143939393939393
+      },
+      {
+        "category": "运动",
+        "refund_rate": 0.15875370919881307
+      },
+      {
+        "category": "家电",
+        "refund_rate": 0.14566929133858267
+      }
+    ]
+  },
+  "g03": {
+    "columns": [
+      "channel",
+      "aov"
+    ],
+    "rows": [
+      {
+        "channel": "offline",
+        "aov": 1826.2420616113745
+      },
+      {
+        "channel": "mini_program",
+        "aov": 1812.0804682488777
+      },
+      {
+        "channel": "web",
+        "aov": 1794.532394026975
+      },
+      {
+        "channel": "app",
+        "aov": 1759.7119356486212
+      }
+    ]
+  },
+  "g04": {
+    "columns": [
+      "payment_method",
+      "order_count"
+    ],
+    "rows": [
+      {
+        "payment_method": "wechat",
+        "order_count": 3613
+      },
+      {
+        "payment_method": "alipay",
+        "order_count": 2732
+      },
+      {
+        "payment_method": "bank_card",
+        "order_count": 1208
+      },
+      {
+        "payment_method": "cash",
+        "order_count": 420
+      }
+    ]
+  },
+  "g05": {
+    "columns": [
+      "sub_category",
+      "gross_margin"
+    ],
+    "rows": [
+      {
+        "sub_category": "童装",
+        "gross_margin": 0.33231608143347163
+      },
+      {
+        "sub_category": "平板",
+        "gross_margin": 0.330072260695393
+      },
+      {
+        "sub_category": "健身器材",
+        "gross_margin": 0.32843010018933133
+      },
+      {
+        "sub_category": "厨具",
+        "gross_margin": 0.32072515755987063
+      },
+      {
+        "sub_category": "个护",
+        "gross_margin": 0.3198912617401155
+      },
+      {
+        "sub_category": "运动鞋",
+        "gross_margin": 0.3159827363264576
+      },
+      {
+        "sub_category": "耳机",
+        "gross_margin": 0.31566603250659014
+      },
+      {
+        "sub_category": "粮油",
+        "gross_margin": 0.3113378279414561
+      },
+      {
+        "sub_category": "外套",
+        "gross_margin": 0.310865761465601
+      },
+      {
+        "sub_category": "生鲜",
+        "gross_margin": 0.3081385162433385
+      },
+      {
+        "sub_category": "手机",
+        "gross_margin": 0.3068352060230016
+      },
+      {
+        "sub_category": "玩具",
+        "gross_margin": 0.30572412493022527
+      },
+      {
+        "sub_category": "饮料",
+        "gross_margin": 0.3048115399789091
+      },
+      {
+        "sub_category": "小家电",
+        "gross_margin": 0.30458073170559913
+      },
+      {
+        "sub_category": "纸尿裤",
+        "gross_margin": 0.3040096427060617
+      },
+      {
+        "sub_category": "收纳",
+        "gross_margin": 0.302934665196866
+      },
+      {
+        "sub_category": "厨房电器",
+        "gross_margin": 0.30087588757290523
+      },
+      {
+        "sub_category": "T恤",
+        "gross_margin": 0.29636913096224876
+      },
+      {
+        "sub_category": "连衣裙",
+        "gross_margin": 0.29624220260652134
+      },
+      {
+        "sub_category": "零食",
+        "gross_margin": 0.2959215067081022
+      },
+      {
+        "sub_category": "面部护理",
+        "gross_margin": 0.2938682349268372
+      },
+      {
+        "sub_category": "户外",
+        "gross_margin": 0.2921921429759162
+      },
+      {
+        "sub_category": "配件",
+        "gross_margin": 0.29176650029064455
+      },
+      {
+        "sub_category": "彩妆",
+        "gross_margin": 0.28851507097041607
+      },
+      {
+        "sub_category": "香水",
+        "gross_margin": 0.28392526367199056
+      },
+      {
+        "sub_category": "床上用品",
+        "gross_margin": 0.28359815982772085
+      },
+      {
+        "sub_category": "洗衣机",
+        "gross_margin": 0.27601082949813616
+      },
+      {
+        "sub_category": "裤装",
+        "gross_margin": 0.27270052238717585
+      },
+      {
+        "sub_category": "奶粉",
+        "gross_margin": 0.2684426527832408
+      },
+      {
+        "sub_category": "运动服",
+        "gross_margin": 0.2660876881467012
+      },
+      {
+        "sub_category": "装饰",
+        "gross_margin": 0.25912572662101024
+      },
+      {
+        "sub_category": "冰箱",
+        "gross_margin": 0.2467347859702346
+      }
+    ]
+  }
+}
