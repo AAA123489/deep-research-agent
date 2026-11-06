@@ -40,9 +40,18 @@ __all__ = [
     "load_registry",
 ]
 
+# DuckDB 是当前语义层的默认 SQL 方言；所有表达式都按它来解析和规范化。
 DIALECT = "duckdb"
 
+# 业务上指标分为三类：
+# - additive: 可直接聚合的原子指标
+# - derived: 由其他指标组合而成
+# - ratio: 分子/分母型比率指标
 KINDS: tuple[str, ...] = ("additive", "derived", "ratio")
+
+# 退款口径允许的枚举值：
+# - none: 退款不计入指标
+# - keep_original: 保持原始退款口径不变
 REFUND_TREATMENTS: tuple[str, ...] = ("none", "keep_original")
 DIMENSION_TYPES: tuple[str, ...] = ("time", "category")
 GRANULARITIES: tuple[str, ...] = ("day", "week", "month", "quarter")
@@ -199,6 +208,11 @@ class _Loader:
         self.directory = directory
 
     def load(self) -> MetricRegistry:
+        # 语义层在服务启动前就做全量校验：
+        # 1) 维度定义是否正确
+        # 2) 指标依赖是否存在且无环
+        # 3) 退款口径是否一致
+        # 4) SQL 表达式是否能在 DuckDB 上解析
         if not self.directory.is_dir():
             raise SemanticConfigError(f"语义层目录不存在：{self.directory}")
         dimensions = self._load_dimensions()
@@ -238,6 +252,8 @@ class _Loader:
         return raw
 
     # -- 维度 --------------------------------------------------------------
+    # 维度定义负责统一分组字段和时间粒度校验；这里的要求比普通 SQL 更严格，
+    # 目的是把口径不一致的字段提前拦住，避免查询时才发现 "订单日期" 和 "支付日期" 混用。
 
     def _load_dimensions(self) -> dict[str, DimensionSpec]:
         raw = self._unwrap(self._read_yaml("dimensions.yaml"), "dimensions")
@@ -383,6 +399,9 @@ class _Loader:
             _parse_query(where, expression, source=source, filters=required_filters)
 
         else:  # derived / ratio
+            # 派生指标并不直接从事实表取数，而是通过组件拼装。
+            # 因此 source / required_filters / required_joins 这些底层查询信息，
+            # 必须由它们依赖的原子指标提供，不能在这里重复声明。
             for forbidden in ("source", "required_filters", "required_joins"):
                 if forbidden in body:
                     raise SemanticConfigError(
@@ -481,6 +500,9 @@ class _Loader:
             state[key] = 1
             order.append(key)
 
+        # 通过拓扑排序保证：先解析依赖，再处理当前指标。
+        # 这样所有依赖的 refund_treatment 都已经确定，后续创建的 MetricSpec
+        # 可以直接使用 resolved 中的最终口径做一致性检查。
         for key in specs:
             visit(key)
         return order
@@ -490,6 +512,8 @@ class _Loader:
         spec: MetricSpec,
         resolved: Mapping[str, MetricSpec],
     ) -> MetricSpec:
+        # 派生指标的退款口径可以从依赖项中继承，但前提是它们的口径一致。
+        # 只有当未显式声明 refund_treatment 且依赖项仍是派生指标时，才需要做补推导。
         if not spec.is_derived or spec.refund_treatment:
             return spec
 
@@ -598,6 +622,7 @@ def _parse_query(
     """把 expression + source + filters 拼成完整查询再解析。
 
     单看 expression 是合法的，拼起来未必 —— 比如 source 少了 JOIN。
+    这一步的目的是让配置在「看似合法」的情况下也能尽早发现拼接错误。
     """
     sql = f"SELECT {expression} FROM {source}"
     if filters:
