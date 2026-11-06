@@ -45,9 +45,9 @@ WHERE o.status IN ('paid', 'shipped', 'completed') -- 只统计有效状态订�
 -- ------------------------------------------------------------
 -- 4. refunded_orders —— 有效订单中发生过退款的订单数 -- 说明退款订单的统计口径：按订单去重计数
 -- ------------------------------------------------------------
-SELECT COUNT(DISTINCT o.order_id) AS refunded_orders -- 统计发生过退款的有效订单数量
+SELECT COUNT(DISTINCT CASE WHEN r.refund_id IS NOT NULL THEN o.order_id END) AS refunded_orders -- 用 CASE 标记退款订单，保持与语义层 metrics.yaml 完全一致
 FROM orders o -- 从订单主表读取订单
-JOIN refunds r ON r.order_id = o.order_id -- 关联退款表，筛选有退款记录的订单
+LEFT JOIN refunds r ON r.order_id = o.order_id -- 左连接退款表，无退款的订单也保留，不会被过滤掉
 WHERE o.status IN ('paid', 'shipped', 'completed') -- 只统计有效订单
   AND o.paid_at IS NOT NULL; -- 过滤未支付订单
 
