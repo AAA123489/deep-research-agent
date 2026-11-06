@@ -30,7 +30,7 @@ build/
 *.sqlite3
 data/*.parquet
 eval/results/
-eval/last_run.txt
+eval/last_run*.txt
 
 # 日志
 *.log

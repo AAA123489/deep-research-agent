@@ -70,7 +70,7 @@ guards.py      用  loader.py 读出来的结果
 | `backend/app/semantic/loader.py` | 读 yaml + 检查写没写错 | ✅ |
 | `backend/app/graph/guards.py` | 检查模型写的 SQL | ✅ |
 | `eval/seed_queries.sql` | 手写 8 条标准 SQL，用来对答案 | ✅ |
-| `eval/questions.yaml` | 20 道评测题 + 标准 SQL | ✅ |
+| `eval/questions.yaml` | 30 道评测题 + 标准 SQL | ✅ |
 | `eval/run.py` | 评测脚本，判分只看结果数字 | ✅ |
 
 ---

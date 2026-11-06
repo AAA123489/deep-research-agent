@@ -23,7 +23,7 @@
 # ============================================================
 gmv:
   name: 成交总额
-  synonyms: [GMV, 销售额, 成交额, 交易额]
+  synonyms: [GMV, 销售额, 成交额, 交易额, 卖了多少钱]
   kind: additive
   source: >
     orders o
@@ -48,7 +48,7 @@ gmv:
 # ============================================================
 order_count:
   name: 订单数
-  synonyms: [订单量, 成交单数, 单量, 订单数量, 订单]
+  synonyms: [订单量, 成交单数, 单量, 订单数量, 订单, 卖了多少单]
   kind: additive
   # 这里 JOIN 明细和商品只是为了支持按品类切片；
   # COUNT(DISTINCT o.order_id) 保证不会因为明细多行而重复计数。
@@ -147,7 +147,7 @@ gross_profit:
 # ============================================================
 aov:
   name: 客单价
-  synonyms: [平均订单金额, 客单]
+  synonyms: [平均订单金额, 客单, 平均每单]
   kind: derived
   numerator: gmv
   denominator: order_count

@@ -390,5 +390,307 @@
         "gross_margin": 0.2467347859702346
       }
     ]
+  },
+  "r01": {
+    "columns": [
+      "gmv"
+    ],
+    "rows": [
+      {
+        "gmv": 5714301.16
+      }
+    ]
+  },
+  "r02": {
+    "columns": [
+      "order_count"
+    ],
+    "rows": [
+      {
+        "order_count": 778
+      }
+    ]
+  },
+  "t01": {
+    "columns": [
+      "month",
+      "gmv"
+    ],
+    "rows": [
+      {
+        "month": "2026-01-01",
+        "gmv": 6025312.5
+      },
+      {
+        "month": "2026-02-01",
+        "gmv": 5670074.33
+      },
+      {
+        "month": "2026-03-01",
+        "gmv": 6086979.17
+      },
+      {
+        "month": "2026-04-01",
+        "gmv": 5856240.27
+      },
+      {
+        "month": "2026-05-01",
+        "gmv": 6213077.83
+      },
+      {
+        "month": "2026-06-01",
+        "gmv": 14212188.79
+      }
+    ]
+  },
+  "t02": {
+    "columns": [
+      "month",
+      "order_count"
+    ],
+    "rows": [
+      {
+        "month": "2026-01-01",
+        "order_count": 3391
+      },
+      {
+        "month": "2026-02-01",
+        "order_count": 3129
+      },
+      {
+        "month": "2026-03-01",
+        "order_count": 3335
+      },
+      {
+        "month": "2026-04-01",
+        "order_count": 3306
+      },
+      {
+        "month": "2026-05-01",
+        "order_count": 3459
+      },
+      {
+        "month": "2026-06-01",
+        "order_count": 7973
+      }
+    ]
+  },
+  "e01": {
+    "columns": [
+      "category",
+      "gmv"
+    ],
+    "rows": []
+  },
+  "s01": {
+    "columns": [
+      "gmv"
+    ],
+    "rows": [
+      {
+        "gmv": 2224557.1
+      }
+    ]
+  },
+  "d01": {
+    "columns": [
+      "channel",
+      "category",
+      "gmv"
+    ],
+    "rows": [
+      {
+        "channel": "app",
+        "category": "服饰",
+        "gmv": 1555971.66
+      },
+      {
+        "channel": "app",
+        "category": "家居",
+        "gmv": 1243315.76
+      },
+      {
+        "channel": "app",
+        "category": "美妆",
+        "gmv": 1183450.1
+      },
+      {
+        "channel": "app",
+        "category": "数码",
+        "gmv": 834727.57
+      },
+      {
+        "channel": "web",
+        "category": "服饰",
+        "gmv": 816124.48
+      },
+      {
+        "channel": "web",
+        "category": "家居",
+        "gmv": 675292.74
+      },
+      {
+        "channel": "app",
+        "category": "母婴",
+        "gmv": 658413.05
+      },
+      {
+        "channel": "web",
+        "category": "美妆",
+        "gmv": 637163.91
+      },
+      {
+        "channel": "app",
+        "category": "食品",
+        "gmv": 620410.45
+      },
+      {
+        "channel": "mini_program",
+        "category": "服饰",
+        "gmv": 609399.9
+      },
+      {
+        "channel": "mini_program",
+        "category": "家居",
+        "gmv": 542732.44
+      },
+      {
+        "channel": "web",
+        "category": "数码",
+        "gmv": 517923.5
+      },
+      {
+        "channel": "mini_program",
+        "category": "美妆",
+        "gmv": 505314.32
+      },
+      {
+        "channel": "app",
+        "category": "运动",
+        "gmv": 454577.91
+      },
+      {
+        "channel": "app",
+        "category": "家电",
+        "gmv": 340165.44
+      },
+      {
+        "channel": "web",
+        "category": "母婴",
+        "gmv": 333524.68
+      },
+      {
+        "channel": "web",
+        "category": "食品",
+        "gmv": 326326.83
+      },
+      {
+        "channel": "mini_program",
+        "category": "数码",
+        "gmv": 288987.31
+      },
+      {
+        "channel": "mini_program",
+        "category": "母婴",
+        "gmv": 277828.47
+      },
+      {
+        "channel": "mini_program",
+        "category": "食品",
+        "gmv": 248107.35
+      },
+      {
+        "channel": "web",
+        "category": "运动",
+        "gmv": 212765.15
+      },
+      {
+        "channel": "web",
+        "category": "家电",
+        "gmv": 206327.96
+      },
+      {
+        "channel": "mini_program",
+        "category": "运动",
+        "gmv": 183463.39
+      },
+      {
+        "channel": "mini_program",
+        "category": "家电",
+        "gmv": 169200.27
+      },
+      {
+        "channel": "offline",
+        "category": "服饰",
+        "gmv": 158991.5
+      },
+      {
+        "channel": "offline",
+        "category": "家居",
+        "gmv": 146024.44
+      },
+      {
+        "channel": "offline",
+        "category": "美妆",
+        "gmv": 133560.94
+      },
+      {
+        "channel": "offline",
+        "category": "数码",
+        "gmv": 106288.0
+      },
+      {
+        "channel": "offline",
+        "category": "食品",
+        "gmv": 70238.72
+      },
+      {
+        "channel": "offline",
+        "category": "家电",
+        "gmv": 58180.4
+      },
+      {
+        "channel": "offline",
+        "category": "母婴",
+        "gmv": 56065.04
+      },
+      {
+        "channel": "offline",
+        "category": "运动",
+        "gmv": 41325.11
+      }
+    ]
+  },
+  "n01": {
+    "columns": [
+      "province",
+      "gmv"
+    ],
+    "rows": [
+      {
+        "province": "广东省",
+        "gmv": 2224557.1
+      },
+      {
+        "province": "浙江省",
+        "gmv": 2084664.03
+      },
+      {
+        "province": "江苏省",
+        "gmv": 1922447.82
+      }
+    ]
+  },
+  "n02": {
+    "columns": [
+      "category",
+      "refund_rate"
+    ],
+    "rows": [
+      {
+        "category": "数码",
+        "refund_rate": 0.1956043956043956
+      }
+    ]
   }
 }

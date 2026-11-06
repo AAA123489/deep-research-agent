@@ -1,4 +1,4 @@
-# 20 道评测题
+# 30 道评测题
 #
 # 每题有三样东西：
 #   question       用户会怎么说
@@ -144,7 +144,7 @@ questions:
 
   - id: a10
     type: analysis
-    question: 2025年11月双十一的销售额
+    question: 2025年11月的销售额
     metric: gmv
     expect: scalar
     reference_sql: |
@@ -283,3 +283,161 @@ questions:
     type: clarify
     question: 帮我看看数据
     expect: clarify
+
+  # ── 补充 10 题：专挑容易翻车的地方 ────────────────────────────
+  #
+  # 数据只到 2026-09-30，而「今天」是 2026-11-06。
+  # 相对时间必须锚在数据末尾，按真实今天算会一条都查不到。
+
+  # 相对时间窗口
+  - id: r01
+    type: analysis
+    question: 最近30天的销售额
+    metric: gmv
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-09-01' AND o.paid_at < DATE '2026-10-01'
+
+  - id: r02
+    type: analysis
+    question: 最近7天的订单数
+    metric: order_count
+    expect: scalar
+    reference_sql: |
+      SELECT COUNT(DISTINCT o.order_id) AS order_count
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-09-24' AND o.paid_at < DATE '2026-10-01'
+
+  # 按时间分组（DATE_TRUNC 这条路径之前一题都没走过）
+  - id: t01
+    type: group
+    question: 2026年上半年的销售额按月趋势
+    metric: gmv
+    expect: rows
+    reference_sql: |
+      SELECT DATE_TRUNC('month', o.paid_at) AS month,
+             SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-01-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 1
+
+  - id: t02
+    type: group
+    question: 2026年1月到6月每月各有多少订单
+    metric: order_count
+    expect: rows
+    reference_sql: |
+      SELECT DATE_TRUNC('month', o.paid_at) AS month,
+             COUNT(DISTINCT o.order_id) AS order_count
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-01-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 1
+
+  # 空结果：2024 年整段没有数据，应该老老实实返回 0 行
+  - id: e01
+    type: group
+    question: 2024年各品类的销售额
+    metric: gmv
+    expect: rows
+    reference_sql: |
+      SELECT p.category AS category,
+             SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2024-01-01' AND o.paid_at < DATE '2025-01-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+
+  # 口语说法：不出现「销售额」「GMV」这些词，看同义词表够不够
+  - id: s01
+    type: analysis
+    question: 2026年6月广东卖了多少钱
+    metric: gmv
+    expect: scalar
+    reference_sql: |
+      SELECT SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+        AND o.province = '广东省'
+
+  # 用户问了一个 visible: false 的组件指标，应该追问而不是硬算
+  - id: x01
+    type: clarify
+    question: 2026年6月的商品成本是多少
+    expect: clarify
+
+  # 两个维度交叉
+  - id: d01
+    type: group
+    question: 2026年6月各渠道各品类的销售额
+    metric: gmv
+    expect: rows
+    reference_sql: |
+      SELECT o.channel AS channel,
+             p.category AS category,
+             SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1, 2
+      ORDER BY 3 DESC
+
+  # Top-N：ORDER BY + LIMIT
+  - id: n01
+    type: group
+    question: 2026年6月销售额最高的三个省份
+    metric: gmv
+    expect: rows
+    reference_sql: |
+      SELECT o.province AS province,
+             SUM(oi.quantity * oi.unit_price) AS gmv
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+      LIMIT 3
+
+  - id: n02
+    type: group
+    question: 2026年6月退款率最高的品类是哪个
+    metric: refund_rate
+    expect: rows
+    reference_sql: |
+      SELECT p.category AS category,
+             COUNT(DISTINCT CASE WHEN r.refund_id IS NOT NULL THEN o.order_id END)
+               / NULLIF(COUNT(DISTINCT o.order_id), 0) AS refund_rate
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.order_id
+      JOIN products p ON p.product_id = oi.product_id
+      LEFT JOIN refunds r ON r.order_id = o.order_id
+      WHERE o.status IN ('paid', 'shipped', 'completed') AND o.paid_at IS NOT NULL
+        AND o.paid_at >= DATE '2026-06-01' AND o.paid_at < DATE '2026-07-01'
+      GROUP BY 1
+      ORDER BY 2 DESC
+      LIMIT 1

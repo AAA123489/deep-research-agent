@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from app.semantic.loader import MetricRegistry, MetricSpec
@@ -22,13 +22,17 @@ _SYSTEM_TEMPLATE = """\
 3. WHERE 里必须包含「必带过滤」列出的每一条条件。
 4. 需要的表都写在「数据来源」里；如果「必带 JOIN」非空，ON 条件也必须写进去。
 5. 只能按「可用维度」里的字段 GROUP BY。时间维度用 DATE_TRUNC('粒度', 字段)。
-6. 问题里没给时间范围时，用「默认时间窗口」，基准日是 {data_end}。
-7. 输出列名用英文小写别名。
-8. 时间范围只写进 WHERE。除非用户明说「按天/按周/按月/趋势/每天」，否则不要
+6. 相对时间一律以数据末尾 {data_end} 为基准日，并且包含基准日当天。
+   「最近 N 天」= 基准日往前 N-1 天到基准日，写成
+   >= DATE '起点' AND < DATE '基准日次日'。
+   例：最近 7 天 → o.paid_at >= DATE '{last7_start}' AND o.paid_at < DATE '{data_end_next}'
+7. 问题里没给时间范围时，用「默认时间窗口」，按第 6 条同样的规则换算。
+8. 输出列名用英文小写别名。
+9. 时间范围只写进 WHERE。除非用户明说「按天/按周/按月/趋势/每天」，否则不要
    GROUP BY 时间维度，也不要把时间列放进 SELECT。
-9. 除非用户明说「分别/各/每个/排名/从高到低/对比」，否则不要 GROUP BY 任何维度，
-   直接返回一个总数。
-10. 维度取值必须用「可用维度」里列出来的原值，不要翻译、不要补全、不要改写。
+10. 除非用户明说「分别/各/每个/排名/从高到低/对比」，否则不要 GROUP BY 任何维度，
+    直接返回一个总数。
+11. 维度取值必须用「可用维度」里列出来的原值，不要翻译、不要补全、不要改写。
 
 数据覆盖范围：{data_start} 到 {data_end}（历史快照，不是真实今天）。
 
@@ -72,9 +76,12 @@ def build_messages(
     value_hints: dict[str, list[str]] | None = None,
 ) -> list[dict[str, str]]:
     """返回 OpenAI 兼容格式的 messages。"""
+    data_end = bounds[1]
     system = _SYSTEM_TEMPLATE.format(
         data_start=bounds[0].isoformat(),
-        data_end=bounds[1].isoformat(),
+        data_end=data_end.isoformat(),
+        data_end_next=(data_end + timedelta(days=1)).isoformat(),
+        last7_start=(data_end - timedelta(days=6)).isoformat(),
         key=spec.key,
         name=spec.name,
         unit=spec.unit,
