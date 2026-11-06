@@ -35,6 +35,7 @@ class AnalysisState(TypedDict, total=False):
 
     # 输出
     answer: str
+    chart: dict[str, Any] | None   # 前端拿这个决定画什么
     status: str            # running | ok | clarify | failed
 
     # 进度事件流

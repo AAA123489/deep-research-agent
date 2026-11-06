@@ -22,12 +22,14 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
 from app.semantic.loader import MetricRegistry, MetricSpec
 
+from .chart import build_chart
 from .executor import Executor
 from .guards import GuardError, check
 from .llm import SQLGenerator
@@ -155,8 +157,13 @@ def build_graph(
 
     def summarize(state: AnalysisState) -> dict[str, Any]:
         spec = registry.get(state["metric_key"])
-        answer = summarize_result(spec, state.get("columns", []), state.get("rows", []))
-        return {"answer": answer, "trace": [event("summarize", "生成结论")]}
+        columns = state.get("columns", [])
+        rows = state.get("rows", [])
+        return {
+            "answer": summarize_result(spec, columns, rows),
+            "chart": build_chart(spec, columns, rows),
+            "trace": [event("summarize", "结论只用结果里的数字拼，不经过模型")],
+        }
 
     def give_up(state: AnalysisState) -> dict[str, Any]:
         reason = state.get("guard_error") or state.get("answer") or "未知原因"
@@ -258,7 +265,7 @@ def summarize_result(
 
     top, bottom = ordered[0], ordered[-1]
     return (
-        f"共 {len(ordered)} 组。"
+        f"{_count(ordered, label_columns)}。"
         f"最高的是 {_label(top, label_columns)}"
         f"（{_fmt(top[value_column], spec.unit)}），"
         f"最低的是 {_label(bottom, label_columns)}"
@@ -287,9 +294,34 @@ def _pick_value_column(
     return numeric[-1]
 
 
+_ISO_DATE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+
+
+def _count(rows: list[dict[str, Any]], label_columns: list[str]) -> str:
+    """「共 90 组」读着别扭，按时间分组时该说「共 90 天」。"""
+    if len(label_columns) == 1:
+        values = [row.get(label_columns[0]) for row in rows]
+        if all(isinstance(value, str) and _ISO_DATE.match(value) for value in values):
+            unit = "个月" if all(value.endswith("-01") for value in values) else "天"
+            return f"共 {len(rows)} {unit}"
+    return f"共 {len(rows)} 组"
+
+
 def _label(row: dict[str, Any], label_columns: list[str]) -> str:
-    parts = [str(row[column]) for column in label_columns if column in row]
+    parts = [_human(row[column]) for column in label_columns if column in row]
     return " / ".join(parts) if parts else "合计"
+
+
+def _human(value: Any) -> str:
+    """把 2026-06-01 这种机器日期说成人话。"""
+    if isinstance(value, str):
+        matched = _ISO_DATE.match(value)
+        if matched:
+            year, month, day = matched.groups()
+            if day == "01":
+                return f"{year}年{int(month)}月"
+            return f"{year}年{int(month)}月{int(day)}日"
+    return str(value)
 
 
 def _number(value: Any) -> float:
@@ -332,3 +364,32 @@ def run(
 ) -> AnalysisState:
     graph = build_graph(registry, executor, generator, max_repair=max_repair)
     return graph.invoke({"question": question, "trace": []})
+
+
+def stream(
+    question: str,
+    *,
+    registry: MetricRegistry,
+    executor: Executor,
+    generator: SQLGenerator,
+    max_repair: int = DEFAULT_MAX_REPAIR,
+):
+    """和 :func:`run` 跑同一张图，但每走完一个节点就往外吐一条进度。
+
+    产出 ``(事件, 当时的状态)``；最后一条事件的 ``node`` 是 ``None``，
+    这时第二个元素就是最终状态。前端拿它做「看着它一步步走」的效果。
+    """
+    graph = build_graph(registry, executor, generator, max_repair=max_repair)
+
+    cursor = 0
+    final: AnalysisState | None = None
+
+    for snapshot in graph.stream({"question": question, "trace": []}, stream_mode="values"):
+        final = snapshot
+        trace = snapshot.get("trace", [])
+        for item in trace[cursor:]:
+            yield item, snapshot
+        cursor = len(trace)
+
+    if final is not None:
+        yield None, final

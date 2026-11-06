@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>电商经营分析 Agent</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <h1>电商经营分析</h1>
+  </div>
+  <button id="theme-toggle" class="ghost" type="button" title="切换深浅色">深浅色</button>
+</header>
+
+<main class="shell">
+
+  <section class="ask" aria-label="提问">
+    <form id="ask-form" class="ask-form">
+      <label class="sr-only" for="question">你的问题</label>
+      <input id="question" name="question" type="text" autocomplete="off"
+             placeholder="比如：2026年6月各省份的销售额，从高到低" required>
+      <button id="submit" type="submit">提问</button>
+    </form>
+    <div class="examples" id="examples" aria-label="示例问题"></div>
+  </section>
+
+  <div class="columns">
+
+    <section class="result" aria-live="polite" aria-label="结果">
+      <div id="empty" class="placeholder">
+        <p>问一句业务问题，它会先查口径、再写 SQL、过一遍校验，最后才查库。</p>
+        <p class="muted">结论里的每个数字都能在下面的表里找到。</p>
+      </div>
+
+      <article id="card" class="card" hidden>
+        <div id="figure" class="figure"></div>
+        <p id="answer" class="answer"></p>
+        <details id="data-details" class="data-details">
+          <summary>看数据</summary>
+          <div id="table-wrap" class="table-wrap"></div>
+        </details>
+        <details id="sql-details" class="data-details">
+          <summary>看 SQL</summary>
+          <pre id="sql" class="sql"></pre>
+        </details>
+      </article>
+    </section>
+
+    <aside class="trace-panel" aria-label="执行过程">
+      <h2>执行过程</h2>
+      <ol id="trace" class="trace"></ol>
+      <p id="trace-empty" class="muted small">还没有开始。</p>
+    </aside>
+
+  </div>
+</main>
+
+<script src="/static/vendor/echarts.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -38,23 +38,24 @@ guards.py      用  loader.py 读出来的结果
 
 ---
 
-## 现在缺什么
-
-缺第 7 步：**把上面这些串起来，让用户问一句话就能出结果。**
+## 从一句问题到一个页面
 
 ```
 用户："上个月各省销售额"
         ↓
-  调 loader 拿到 GMV 的定义
+  loader 拿到 GMV 的定义（公式、必带的过滤、可用的维度）
         ↓
-  让模型写 SQL
+  模型写 SQL
         ↓
-  guards 检查 → 通过了才查库
+  guards 检查 → 不过就带着报错让模型改，最多改 2 次
         ↓
-  把数字和图表返回给用户
+  查库（只读连接）→ 结论用模板拼，图表按结果形状选
+        ↓
+  每一步都通过 SSE 推给前端，边跑边显示
 ```
 
-这一段就是接下来要写的 LangGraph 编排层。
+中间那两环（守卫 → 修复 → 守卫）是这条链路的核心：模型第一次写不对很正常，
+关键是能把「哪里不对」原样喂回去让它改。
 
 ---
 
@@ -69,6 +70,13 @@ guards.py      用  loader.py 读出来的结果
 | `backend/app/semantic/dimensions.yaml` | 6 个可分组维度 | ✅ |
 | `backend/app/semantic/loader.py` | 读 yaml + 检查写没写错 | ✅ |
 | `backend/app/graph/guards.py` | 检查模型写的 SQL | ✅ |
+| `backend/app/graph/prompts.py` | 把指标口径摊开成提示词 | ✅ |
+| `backend/app/graph/llm.py` | 调模型的唯一入口 | ✅ |
+| `backend/app/graph/executor.py` | 只读查库，顺手取各维度的真实取值 | ✅ |
+| `backend/app/graph/pipeline.py` | LangGraph 编排，含守卫→修复的环 | ✅ |
+| `backend/app/graph/chart.py` | 按结果形状选图表，不走模型 | ✅ |
+| `backend/app/api.py` | FastAPI，三个接口 + SSE | ✅ |
+| `frontend/` | 一个页面，原生 JS + 本地 ECharts | ✅ |
 | `eval/seed_queries.sql` | 手写 8 条标准 SQL，用来对答案 | ✅ |
 | `eval/questions.yaml` | 30 道评测题 + 标准 SQL | ✅ |
 | `eval/run.py` | 评测脚本，判分只看结果数字 | ✅ |
@@ -108,6 +116,26 @@ metrics.yaml      →  查库  →  另一组数字
 
 ---
 
+## 额外的：接口为什么用 SSE
+
+`POST /api/ask` 不等结果攒齐再返回，而是一步一条地往下推：
+
+```
+event: step
+data: {"node": "guard", "message": "未通过：missing_filter"}   ← 守卫拦下来了
+event: step
+data: {"node": "repair", "message": "第 2 次生成 SQL（修复）"}
+event: step
+data: {"node": "guard", "message": "通过"}
+...
+event: result
+data: {"answer": "...", "sql": "...", "chart": {...}}
+```
+
+攒成一个 JSON 返回，这些过程就全看不见了 —— 而这恰恰是这个项目最值得看的部分。
+
+---
+
 ## 怎么跑
 
 ```bash
@@ -131,4 +159,10 @@ set LLM_API_KEY=sk-xxx
 set LLM_MODEL=deepseek-v4-flash
 set LLM_BASE_URL=https://api.deepseek.com/v1
 python eval/run.py --model
+
+# 7. 起页面
+cd backend && python -m app.api
+# 浏览器打开 http://127.0.0.1:8000
 ```
+
+key 只从环境变量读，不写进任何文件。
