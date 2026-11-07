@@ -144,14 +144,21 @@ python -m app.api
 
 浏览器打开 <http://127.0.0.1:8000>。
 
-模型 key 只从环境变量读，不写进任何文件：
+模型配置两种方式，选一种：
+
+```bash
+# 方式一：写进 .env，配一次就够了（.env 已在 .gitignore 里）
+cp .env.example .env      # 然后填 LLM_API_KEY
+```
 
 ```powershell
-# PowerShell
+# 方式二：当前终端里设，同一个终端里启动
 $env:LLM_API_KEY="sk-..."
 $env:LLM_MODEL="deepseek-v4-flash"
 $env:LLM_BASE_URL="https://api.deepseek.com/v1"
 ```
+
+终端里已经设的变量优先级更高，所以临时换 key 不用改 `.env`。key 不会出现在任何被提交的文件里。
 
 不配 key 也能打开页面，提问时会返回一条「没有配置 key」的提示——不会假装答了。
 

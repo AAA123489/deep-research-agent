@@ -88,10 +88,14 @@ class OpenAICompatGenerator:
         if missing:
             raise RuntimeError(
                 f"缺少环境变量 {missing}。\n"
-                f"设置后重试，比如：\n"
-                f"  set LLM_API_KEY=sk-xxx\n"
-                f"  set LLM_BASE_URL=https://api.deepseek.com/v1\n"
-                f"  set LLM_MODEL=deepseek-chat\n"
+                f"两种配法，选一种：\n"
+                f"  1. 写进 backend/.env（或仓库根目录 .env），一次就好：\n"
+                f"       LLM_API_KEY=sk-xxx\n"
+                f"       LLM_MODEL=deepseek-v4-flash\n"
+                f"       LLM_BASE_URL=https://api.deepseek.com/v1\n"
+                f"  2. 在当前终端里设，然后同一个终端里启动：\n"
+                f"       PowerShell: $env:LLM_API_KEY=\"sk-xxx\"\n"
+                f"       cmd:        set LLM_API_KEY=sk-xxx\n"
                 f"或者用 python -m app.graph --demo 离线跑一遍。"
             )
 

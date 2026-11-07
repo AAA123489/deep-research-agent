@@ -29,6 +29,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
+from app.env import load_env  # noqa: E402
 from app.graph.executor import Executor  # noqa: E402
 from app.graph.llm import OpenAICompatGenerator  # noqa: E402
 from app.graph.pipeline import run  # noqa: E402
@@ -214,6 +215,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--only", nargs="*", help="只跑指定题号")
     parser.add_argument("--max-repair", type=int, default=2)
     args = parser.parse_args(argv)
+
+    load_env()
 
     if args.rebuild:
         return rebuild_golden(args.db)

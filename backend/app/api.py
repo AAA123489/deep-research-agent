@@ -33,10 +33,14 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from app.env import load_env
 from app.graph.executor import Executor
 from app.graph.llm import OpenAICompatGenerator
 from app.graph.pipeline import stream as run_stream
 from app.semantic import load_registry
+
+# 有 .env 就先拿它补上（命令行里已经设的值优先）。必须在读 CHATBI_DB 之前。
+load_env()
 
 ROOT = Path(__file__).resolve().parents[2]
 SEMANTIC_DIR = Path(__file__).resolve().parent / "semantic"

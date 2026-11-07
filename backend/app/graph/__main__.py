@@ -17,6 +17,7 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+from app.env import load_env
 from app.semantic import load_registry
 
 from .executor import Executor
@@ -165,6 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-repair", type=int, default=DEFAULT_MAX_REPAIR)
     args = parser.parse_args(argv)
 
+    load_env()
     registry = load_registry(SEMANTIC_DIR)
 
     with Executor(args.db) as executor:
