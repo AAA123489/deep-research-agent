@@ -19,8 +19,14 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Iterator
+
+# 直接 `python backend/app/api.py` 时，sys.path[0] 是 backend/app，
+# 下面那些 `from app.xxx import` 就找不到了。把 backend/ 补进去。
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
