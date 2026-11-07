@@ -24,6 +24,10 @@ const el = (id) => document.getElementById(id);
 let chart = null;
 let lastResult = null;
 
+/* 双击打开 index.html 时页面是 file://，同源的 /api 并不存在，
+   所以显式指到本机后端；从 http://127.0.0.1:8000 打开时用同源地址就够。 */
+const API_BASE = location.protocol === "file:" ? "http://127.0.0.1:8000" : "";
+
 /* ── 主题 ───────────────────────────────────────────── */
 
 function initTheme() {
@@ -87,7 +91,7 @@ async function ask(question) {
   lastResult = null;
 
   try {
-    const response = await fetch("/api/ask", {
+    const response = await fetch(`${API_BASE}/api/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
@@ -101,7 +105,12 @@ async function ask(question) {
     await readStream(response.body);
   } catch (error) {
     el("empty").hidden = false;
-    showError(error.message);
+    // fetch 连不上时抛的是 TypeError，原文是 "Failed to fetch"，看不懂
+    showError(
+      error instanceof TypeError
+        ? `连不上后端。先在终端里启动：python backend/app/api.py，再刷新页面。`
+        : error.message
+    );
   } finally {
     submit.disabled = false;
     submit.textContent = "提问";

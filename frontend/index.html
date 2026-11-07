@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>电商经营分析 Agent</title>
-<link rel="stylesheet" href="/static/style.css">
+<!-- 全部用相对路径，和磁盘上的目录结构一致：
+     后台起服务时从 / 解析，双击打开时从 index.html 旁边解析，
+     两种方式加载到的是同一批文件。 -->
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -59,7 +62,7 @@
   </div>
 </main>
 
-<script src="/static/vendor/echarts.min.js"></script>
-<script src="/static/app.js"></script>
+<script src="vendor/echarts.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

@@ -29,6 +29,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -48,6 +49,16 @@ FRONTEND_DIR = ROOT / "frontend"
 DEFAULT_DB = ROOT / "data" / "ecommerce.duckdb"
 
 app = FastAPI(title="电商经营分析 Agent", version="0.1.0")
+
+# 直接双击 frontend/index.html 打开时，页面的 Origin 是 null，
+# 请求算是跨域。这个服务只监听 127.0.0.1，放开域名不影响安全。
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 registry = load_registry(SEMANTIC_DIR)
 
 DB_PATH = Path(os.environ.get("CHATBI_DB") or DEFAULT_DB)
@@ -183,9 +194,14 @@ def index() -> FileResponse:
     return FileResponse(path)
 
 
+# 挂在根路径上，URL 就和 frontend/ 里的目录结构一一对应：
+#   /style.css  ->  frontend/style.css
+#   /app.js     ->  frontend/app.js
+# 这样 index.html 里可以写相对路径，双击打开（file://）和起服务（http://）
+# 加载到的是同一批文件。上面那些 /api 路由先注册，不受这个挂载影响。
 app.mount(
-    "/static",
-    StaticFiles(directory=FRONTEND_DIR, check_dir=False),
+    "/",
+    StaticFiles(directory=FRONTEND_DIR, check_dir=False, html=True),
     name="static",
 )
 

@@ -163,6 +163,7 @@ python eval/run.py --model
 # 7. 起页面
 cd backend && python -m app.api
 # 浏览器打开 http://127.0.0.1:8000
+# 或者双击 frontend/index.html（后端起着就行，页面会连过来）
 ```
 
 key 只从环境变量读，不写进任何文件。
